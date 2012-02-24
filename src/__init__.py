@@ -19,4 +19,3 @@ import pol, twodgauss #added by dfm
 from __gitlog__ import __gitlog__
 from __version__ import __version__
 from __branch__ import __branch__
-#__version__ = open('VERSION').read().strip()

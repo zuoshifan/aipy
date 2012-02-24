@@ -5,7 +5,8 @@ echo "Running: lst -C ex_cal -j 2454555.5 > lst_out.txt"
 lst -C ex_cal 2454555.5 | tee lst_out.txt
 
 # Exercise mdlvis.py, create new.uv
-echo "Running: mdlvis.py -C ex_cal -s cyg --nchan=16 --sfreq=.1 --sdf=.001 --inttime=60 --startjd=2454555.5 --endjd=2454555.6 --pol=xx -m sim"
+echo "Running: mdlvis.py -C ex_cal -s cyg --nchan=16 --sfreq=.1 --sdf=.001 --inttime=60 --startjd=2454555.5
+--endjd=2454555.6 --pol=xx -m sim"
 mdlvis.py -C ex_cal -s cyg --nchan=16 --sfreq=.1 --sdf=.001 --inttime=60 --startjd=2454555.5 --endjd=2454555.6 --pol=xx -m sim
 
 # Exercise uvlist.py
@@ -44,8 +45,8 @@ echo "Running: flux_cal.py -C ex_cal -s cyg -p -b -f new.uv"
 flux_cal.py -C ex_cal -s cyg -p -b -f new.uv
 
 # Exercise fitmdl.py, create fitmdl_out.txt
-echo 'Running: fitmdl.py -a 0_1 -p xx -c 5_10 -C ex_cal -s cyg -x 10 -P "(0x/1x)=phsoff" -S "(0x/1x)=amp" --maxiter=200 new.uv'
-fitmdl.py -a 0_1 -p xx -c 5_10 -C ex_cal -s cyg -x 10 -P "(0x/1x)=phsoff" -S "(0x/1x)=amp" --maxiter=200 new.uv
+echo 'Running: fitmdl.py -a 0_1 -p xx -c 5_10 -C ex_cal -s cyg -x 10 -P "(0/1)=phsoff" -S "(0/1)=amp" --maxiter=200 new.uv'
+fitmdl.py -a 0_1 -p xx -c 5_10 -C ex_cal -s cyg -x 10 -P "(0/1)=phsoff" -S "(0/1)=amp" --maxiter=200 new.uv
 
 # Exercise mk_img.py, create out0.{dim,dbm}.fits
 echo "Running: mk_img.py -p xx -C ex_cal -s cyg -o dim,dbm --fmt=out --altmin=30 new.uv"

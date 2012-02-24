@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
 import unittest, aipy as a, numpy as n, re
 from aipy.miriad import ij2bl
 
 class TestParseAnts(unittest.TestCase):
     'Tests aipy.scripting.parse_ants()'
     def testant4(self):
+        """Test aipy.scripting.parse_ants()"""
         nants = 4
         cases = {
             'all': [],
@@ -21,10 +23,28 @@ class TestParseAnts(unittest.TestCase):
         for i in range(nants):
             cases[str(i)] = map(lambda x: (ij2bl(x,i),1), range(nants))
             cases['-'+str(i)] = map(lambda x: (ij2bl(x,i),0), range(nants))
+        # inelegantly paste on the new pol parsing flag on the above tests
+        # XXX really should add some new tests for the new pol parsing
+        for k in cases:
+            cases[k] = [v+(-1,) for v in cases[k]]
         for ant_str in cases:
             self.assertEqual(a.scripting.parse_ants(ant_str, nants), 
                 cases[ant_str])
         self.assertRaises(ValueError, a.scripting.parse_ants, '(0_1)_2', nants)
+
+class TestParseSrcs(unittest.TestCase):
+    'Tests aipy.scripting.parse_srcs()'
+    def testsrc(self):
+        """Test aipy.scripting.parse_srcs()"""
+        cat = 'misc,helm'
+        src_opt = 'cyg,cas,12_40,12:00_40:00,12:00:00.0_40:00:00.0,bug_man'
+        srclist,cutoff,catalogs = a.scripting.parse_srcs(src_opt, cat)
+        self.assertEqual(srclist[0], 'cyg')
+        self.assertEqual(srclist[1], 'cas')
+        self.assertEqual(srclist[2].src_name, '12_40')
+        self.assertEqual(srclist[3].src_name, '12:00_40:00')
+        self.assertEqual(srclist[4].src_name, '12:00:00.0_40:00:00.0')
+        self.assertEqual(srclist[5], 'bug_man')
 
 class TestParseChans(unittest.TestCase):
     'Tests aipy.scripting.parse_chans()'
@@ -38,12 +58,14 @@ class TestParseChans(unittest.TestCase):
             '5,7,40_50': [n.array([5]),n.array([7]),n.arange(40,51)],
         }
     def testchan_concat(self):
+        """Test aipy.scripting.parse_chans() - concatenate"""
         for case in self.cases:
             chans = a.scripting.parse_chans(case, self.nchan, concat=True)
             self.assertTrue(n.all(chans == n.concatenate(self.cases[case])))
         self.assertRaises(AssertionError,
             a.scripting.parse_chans, '0_1_2_3', self.nchan)
     def testchan_noconcat(self):
+        """Test aipy.scripting.parse_chans() - without concatenate"""
         for case in self.cases:
             chans = a.scripting.parse_chans(case, self.nchan, concat=False)
             for ch1, ch2 in zip(chans, self.cases[case]):
@@ -63,6 +85,7 @@ class TestParsePrms(unittest.TestCase):
             '(src13/src14/src15)=(jys/index)//1',
         ]
     def testname(self):
+        """Test aipy.scripting.name matching"""
         r = re.compile(a.scripting.name)
         self.assertEqual(r.match('src1').groups(), ('src1',))
         self.assertEqual(r.match('1').groups(), ('1',))
@@ -73,6 +96,7 @@ class TestParsePrms(unittest.TestCase):
         self.assertEqual(r.match('1)1').groups(), ('1',))
         self.assertEqual(r.match(')1'), None)
     def testgrp(self):
+        """Test aipy.scripting.grp matching"""
         r = re.compile(a.scripting.grp)
         self.assertEqual(r.match('src1').groups()[0], 'src1')
         self.assertEqual(r.match('src1/src2').groups()[0], 'src1')
@@ -81,10 +105,12 @@ class TestParsePrms(unittest.TestCase):
         self.assertEqual(r.match('(src1/)'), None)
         self.assertEqual(r.match('(src1/src2'), None)
     def testprm(self):
+        """Test aipy.scripting.prm_rgx matching"""
         r = a.scripting.prm_rgx
         for t in self.test_strs:
             self.assertEqual(r.match(t).groups()[0], t)
     def testprmlist(self):
+        """Test aipy.scripting.parse_prms()"""
         t = ','.join(self.test_strs)
         prms = a.scripting.parse_prms(t)
         self.assertEqual(prms['src1']['jys'], (None,None))
@@ -114,6 +140,18 @@ class TestParsePrms(unittest.TestCase):
         self.assertEqual(len(prms['3']), 2)
         prms = a.scripting.parse_prms('a=(b/c)')
         self.assertEqual(len(prms['a']), 2)
+
+class TestSuite(unittest.TestSuite):
+    """A unittest.TestSuite class which contains all of the aipy.coord unit tests."""
+
+    def __init__(self):
+        unittest.TestSuite.__init__(self)
+
+        loader = unittest.TestLoader()
+        self.addTests(loader.loadTestsFromTestCase(TestParseAnts))
+        self.addTests(loader.loadTestsFromTestCase(TestParseSrcs))
+        self.addTests(loader.loadTestsFromTestCase(TestParseChans))
+        self.addTests(loader.loadTestsFromTestCase(TestParsePrms))
 
 if __name__ == '__main__':
     unittest.main()

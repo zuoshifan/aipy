@@ -43,7 +43,7 @@ def add_standard_options(optparser, ant=False, pol=False, chan=False,
 ant_re = r'(\(((-?\d+[xy]?,?)+)\)|-?\d+[xy]?)'
 bl_re = '(^(%s_%s|%s),?)' % (ant_re, ant_re, ant_re)
 def parse_ants(ant_str, nants):
-    """Generate list of (baseline, inlude) tuples based on parsing of the
+    """Generate list of (baseline, include) tuples based on parsing of the
     string associated with the 'ants' command-line option."""
     rv,cnt = [], 0
     while cnt < len(ant_str):
@@ -70,20 +70,20 @@ def parse_ants(ant_str, nants):
             include = None
             for i in ais:
                 for j in ajs:
-                    if include is None:
-                        if type(i) == str and i.startswith('-'):
-                             i = i[1:] #nibble the - off the string
-                             include = 0 
-                        elif type(j) == str and j.startswith('-'):
-                            j = j[1:]
-                            include = 0
-                        else: include = 1
+                    if type(i) == str and i.startswith('-'):
+                         i = i[1:] #nibble the - off the string
+                         include = 0 
+                    if type(j) == str and j.startswith('-'):
+                        j = j[1:]
+                        include = 0
+                    elif include==0:pass
+                    else: include = 1
                     pol = None
                     i,j = str(i),str(j)
                     if not i.isdigit():
-                        ai = re.search(r'(\d+)([x,y])',i).groups()
+                        ai = re.search(r'(/d+)([x,y])',i).groups()
                     if not j.isdigit():
-                        aj = re.search(r'(\d+)([x,y])',j).groups()
+                        aj = re.search(r'(/d+)([x,y])',j).groups()
                     if i.isdigit() and not j.isdigit():
                         pol = ['x'+aj[1],'y'+aj[1]]
                         ai = [i,'']
@@ -149,14 +149,17 @@ def parse_srcs(src_str, cat_str):
         cutoff = map(float, src_str.split('/'))
         return None, cutoff, cats
     src_opt = src_str.split(',')
-    if len(src_opt) == 1:
-        src_opt = src_opt[0].split('_')
-        if len(src_opt) == 1: return src_opt, None, cats
-        ra,dec = src_opt
-        s = fit.RadioFixedBody(ra, dec, name=src_str)
-        return [s], None, cats
-    else:
-        return src_opt, None, cats
+    for i, s in enumerate(src_opt):
+        radec = s.split('_')
+        try:
+            assert(len(radec) == 2)
+            ra,dec = radec
+            # Check that this is really an ra_dec pair
+            for piece in ra.split(':'): piece = float(piece)
+            for piece in dec.split(':'): piece = float(piece)
+            src_opt[i] = fit.RadioFixedBody(ra,dec, name=s)
+        except(AssertionError,ValueError): continue
+    return src_opt, None, cats
 
 name = r'([^\(/,\)=]+)'
 grp = r'(%s|\((%s(/%s)*)\))' % tuple([name]*3)

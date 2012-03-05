@@ -38,7 +38,6 @@ def ParAng(ha,dec,lat):
     up = (n.cos(lat)*n.sin(ha))
     down = (n.sin(lat)*n.cos(dec))-(n.cos(lat)*n.sin(dec)*n.cos(ha))
     return n.arctan2(up,down)
-
 #  ____
 # | __ )  ___  __ _ _ ___ ___
 # |  _ \ / _ \/ _` | '_  `_  \

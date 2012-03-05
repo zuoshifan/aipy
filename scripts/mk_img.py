@@ -207,9 +207,9 @@ for srccnt, s in enumerate(cat.values()):
           if s.alt < opts.altmin * a.img.deg2rad: continue
           d,f = d.take(chans), f.take(chans)
           if hasattr(aa[0],'pol'):
-              if not opts.skip_amp: d /= aa.passband(i,j,pol=pol)
+              if not opts.skip_amp: d /= aa.passband(i,j,pol)
               # Throws PointingError if not up:
-              if not opts.skip_phs: d = aa.phs2src(d, s, i, j,pol=pol)
+              if not opts.skip_phs: d = aa.phs2src(d, s, i, j,pol)
           else:
               if not opts.skip_amp: d /= aa.passband(i,j)
               # Throws PointingError if not up:

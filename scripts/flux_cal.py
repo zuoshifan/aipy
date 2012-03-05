@@ -52,7 +52,7 @@ def mfunc(uv, p, d, f):
             s_eq = cat.get_crds('eq', ncrd=3)
             aa.sim_cache(s_eq)
     if opts.passband:
-        if hasattr(aa[0],'pol'): passband = aa.passband(i,j,pol=pol)
+        if hasattr(aa[0],'pol'): passband = aa.passband(i,j,pol)
         else: passband = aa.passband(i,j)
     else: passband = 1
     if opts.beam: bm_resp = aa.bm_response(i,j,pol=pol).squeeze()

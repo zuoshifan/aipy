@@ -3,16 +3,17 @@
 
 import unittest
 import aipy as a, numpy as n
-#import pylab as p
+import pylab as p
 
 class TestDeconv(unittest.TestCase):
     def setUp(self):
-        SIZE = 100
+        SIZE = 50
         NOISE = .001
         i = n.zeros((SIZE,SIZE), n.float)
         i[10,10] = 10.
         i[20:25,20:25] = 1.
         i[30:40,30:40] = .1
+        self.i = i
         self.b = a.img.gaussian_beam(2, shape=i.shape)
         self.b[0,0] = .05
 
@@ -23,10 +24,28 @@ class TestDeconv(unittest.TestCase):
     def test_clean(self):
         """Test that the standard clean deconvolution runs"""
         #print 'Clean'
-        #p.subplot(221)
+        p.subplot(131)
         c,info = a.deconv.clean(self.d, self.b, verbose=False)
+        print "max i,c,i-c"
+        print self.i.max(),c.max(),(self.i-c).max()
+#        p.imshow(n.log10(self.i),vmin=-5, vmax=1)
+        p.imshow(self.i,vmin=0.1,vmax=5)
+        p.title('model')
+
+        p.subplot(132)
+        p.imshow(c,vmin=0.1,vmax=5)
+#        p.imshow(n.log10(c),vmin=-5, vmax=1)
+        p.title('cc')
+
+        p.subplot(133)
+#        p.imshow(n.log10(c - self.i),vmin=-5, vmax=1)
+        p.imshow(c-self.i,vmin=0.1,vmax=5)
+        p.title('cc - model')
+        #print n.sum(c - self.i)
         #p.title('CLEAN')
         #p.imshow(n.log10(c), vmin=-5, vmax=1)
+        p.show()
+        self.assertAlmostEqual(n.sum(self.i - c),0)
 
     def test_lsq(self):
         """Test that least squared deconvolution runs"""

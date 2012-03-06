@@ -126,7 +126,7 @@ for cnt, k in enumerate(keys):
 
     #Fit a 2d Gaussian to the dirty beam and convolve that with the clean components.
     if not opts.cbm is True:
-        bim = rim.cim
+        bim = rim+cim
     else:
         dbm_fit = n.fft.fftshift(dbm)
         DIM = dbm.shape[0]

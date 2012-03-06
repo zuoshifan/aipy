@@ -168,7 +168,7 @@ class AntennaArray(fit.AntennaArray):
             GBIE_sf = Gij_sf * Bij_sf * I_sf * E_sf
             Vij_f = GBIE_sf.sum(axis=0)
             return Vij_f
-        else: return np.zeros_like(self.passband(i,j,pol))
+        else: return n.zeros_like(self.passband(i,j,pol))
     def get_params(self, ant_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
         prms = {}

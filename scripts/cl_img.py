@@ -124,20 +124,20 @@ for cnt, k in enumerate(keys):
         cim,info = n.zeros_like(dim), {'res':dim}
     
     #Fit a 2d Gaussian to the dirty beam and convolve that with the clean components.
+    #dbm_fit = n.fft.fftshift(dbm)
     dbm_fit = n.fft.fftshift(dbm)
     DIM = dbm.shape[0]
-    lo,hi = (DIM-30)/2,(DIM+30)/2
+    lo,hi = (DIM-10)/2,(DIM+10)/2
     dbm_fit = dbm_fit[lo:hi,lo:hi]
     cbm = a.twodgauss.twodgaussian(a.twodgauss.moments(dbm_fit),shape=dbm.shape)
-    cbm = a.img.recenter(cbm,(n.ceil((DIM+dbm_fit.shape[0])/2),n.ceil((DIM+dbm_fit.shape[0])/2)))
-    cbm /= n.sum(cbm)
 
+    cbm = a.img.recenter(cbm,(n.ceil((DIM+dbm_fit.shape[0])/2),n.ceil((DIM+dbm_fit.shape[0])/2)))
     cimc = n.fft.fftshift(n.fft.ifft2(n.fft.fft2(cim)*n.fft.fft2(cbm))).real
 
-    rim = info['res']
+    rim = info['res']/bm_gain
 
-    bim = rim / bm_gain + cimc 
-    
+    bim = rim + cimc
+
     for ftag in ['cim','rim','bim','cimc']:
         if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
     

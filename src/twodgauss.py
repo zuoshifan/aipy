@@ -43,9 +43,14 @@ def twodgaussian(inpars,shape=None):
     def rotgauss(x,y):
         xp = x
         yp = y
-        g = amplitude*n.exp( 
+        #g = amplitude*n.exp( 
+        #    -(((rcen_x-xp)/width_x)**2 + 
+        #    ((rcen_y-yp)/width_y)**2)/2.)
+        g = n.exp( 
             -(((rcen_x-xp)/width_x)**2 + 
             ((rcen_y-yp)/width_y)**2)/2.)
+        g /= (2*n.pi*width_x*width_y)
+
         return g
     if shape is not None:
         return rotgauss(*n.indices(shape))

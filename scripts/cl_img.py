@@ -15,6 +15,7 @@ o.add_option('-d', '--deconv', dest='deconv', default='cln',
     help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).')
 o.add_option('-o', '--output', dest='output', default='bim',
     help='Comma delimited list of data to generate FITS files for.  Can be: cim (clean image), cimc (clean image, convolved with central lobe of dirty beam) rim (residual image), or bim (best image = clean + residuals). Default is bim.')
+o.add_option('--cbm',dest='cbm',action='store_true',help='Convolve by the clean-beam')
 o.add_option('--var', dest='var', type='float', default=.6,
     help='Starting guess for variance in maximum entropy fit (defaults to variance of dirty image.')
 o.add_option('--tol', dest='tol', type='float', default=1e-6,
@@ -121,24 +122,28 @@ for cnt, k in enumerate(keys):
     else:
         cim,info = n.zeros_like(dim), {'res':dim}
     
-    #Fit a 2d Gaussian to the dirty beam and convolve that with the clean components.
-    dbm_fit = n.fft.fftshift(dbm)
-    DIM = dbm.shape[0]
-    lo,hi = (DIM-10)/2,(DIM+10)/2
-    dbm_fit = dbm_fit[lo:hi,lo:hi]
-    cbm = a.twodgauss.twodgaussian(a.twodgauss.moments(dbm_fit),shape=dbm.shape)
-    cbm = a.img.recenter(cbm,(n.ceil((DIM+dbm_fit.shape[0])/2),n.ceil((DIM+dbm_fit.shape[0])/2)))
-    cbm /= cbm.max()
-
-    total_flux = np.sum(cim) 
-    cimc = n.fft.fftshift(n.fft.ifft2(n.fft.fft2(cim)*n.fft.fft2(cbm))).real
-
     rim = info['res']/bm_gain
 
-    bim = rim + cimc
-    #bim = rim + cim
+    #Fit a 2d Gaussian to the dirty beam and convolve that with the clean components.
+    if not opts.cbm is True:
+        bim = rim.cim
+    else:
+        dbm_fit = n.fft.fftshift(dbm)
+        DIM = dbm.shape[0]
+        lo,hi = (DIM-10)/2,(DIM+10)/2
+        dbm_fit = dbm_fit[lo:hi,lo:hi]
+        cbm = a.twodgauss.twodgaussian(a.twodgauss.moments(dbm_fit),shape=dbm.shape)
+        cbm = a.img.recenter(cbm,(n.ceil((DIM+dbm_fit.shape[0])/2),n.ceil((DIM+dbm_fit.shape[0])/2)))
+        cbm /= cbm.max()
 
-    for ftag in ['cim','rim','bim','cimc']:
-        if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
-    
+        cimc = n.fft.fftshift(n.fft.ifft2(n.fft.fft2(cim)*n.fft.fft2(cbm))).real
+        bim = rim + cimc
+
+    if not opts.cbm is True:
+        for ftag in ['cim','rim','bim']:
+            if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
+    else: 
+        for ftag in ['cim','rim','bim','cimc']:
+            if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
+
 

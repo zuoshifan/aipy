@@ -127,14 +127,16 @@ for cnt, k in enumerate(keys):
     lo,hi = (DIM-10)/2,(DIM+10)/2
     dbm_fit = dbm_fit[lo:hi,lo:hi]
     cbm = a.twodgauss.twodgaussian(a.twodgauss.moments(dbm_fit),shape=dbm.shape)
-
     cbm = a.img.recenter(cbm,(n.ceil((DIM+dbm_fit.shape[0])/2),n.ceil((DIM+dbm_fit.shape[0])/2)))
+    cbm /= cbm.max()
+
+    total_flux = np.sum(cim) 
     cimc = n.fft.fftshift(n.fft.ifft2(n.fft.fft2(cim)*n.fft.fft2(cbm))).real
 
     rim = info['res']/bm_gain
 
-    #bim = rim + cimc
-    bim = rim + cim
+    bim = rim + cimc
+    #bim = rim + cim
 
     for ftag in ['cim','rim','bim','cimc']:
         if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)

@@ -114,9 +114,16 @@ for cnt, k in enumerate(keys):
         cim,info = a.deconv.lsq(dim, dbm, 
             maxiter=opts.maxiter, verbose=True, tol=opts.tol)
     elif opts.deconv == 'cln':
-        cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
-            maxiter=opts.maxiter, stop_if_div=not opts.div, 
-            verbose=True, tol=opts.tol,pos_def=not opts.pos_def)
+        if not opts.pos_def is True:
+            cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
+                maxiter=opts.maxiter, stop_if_div=not opts.div, 
+                #verbose=True, tol=opts.tol,pos_def=not opts.pos_def)
+                verbose=True, tol=opts.tol,pos_def=False)
+        else:
+            cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
+                maxiter=opts.maxiter, stop_if_div=not opts.div, 
+                #verbose=True, tol=opts.tol,pos_def=not opts.pos_def)
+                verbose=True, tol=opts.tol,pos_def=True) 
     elif opts.deconv == 'ann':
         cim,info = a.deconv.anneal(dim, dbm, maxiter=opts.maxiter, 
             cooling=lambda i,x: opts.tol*(1-n.cos(i/50.))*(x**2), verbose=True)

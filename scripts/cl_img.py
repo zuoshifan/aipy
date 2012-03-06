@@ -80,10 +80,6 @@ for cnt, k in enumerate(keys):
             divisor = abms.clip(thresh, n.Inf)
             uvs /= divisor; bms /= divisor
         elif opts.rewgt.startswith('radial'):
-            #x,y = n.indices(dim.shape)
-            #x = a.img.recenter(x - DIM/2, (DIM/2,DIM/2))
-            #y = a.img.recenter(y - DIM/2, (DIM/2,DIM/2))
-            #r = n.sqrt(x**2 + y**2)
             uvs *= r; bms *= r
         elif opts.rewgt.startswith('midrange'):
             x,y = n.indices(dim.shape)
@@ -95,15 +91,12 @@ for cnt, k in enumerate(keys):
             wgt = n.where(wgt < 0, 0, wgt)
             uvs *= wgt; bms *= wgt
         else: raise ValueError('Unrecognized rewgt: %s' % opts.rewgt)
-    #mask = n.where(r < opts.minuv, 0, 1)
-    #mask = n.where(r > opts.maxuv, 0, mask)
     mask = 1
     if opts.minuv > 0: mask *= 1 - n.exp(-r**2/opts.minuv**2)
     if opts.maxuv > 0: mask *= n.exp(-r**2/opts.maxuv**2)
     dim = n.fft.ifft2(uvs * mask).real
     dbm = n.fft.ifft2(bms * mask).real
     
-    #dbm = a.img.recenter(dbm, (DIM/2,DIM/2))
     dbm = np.fft.fftshift(dbm)
     bm_gain = a.img.beam_gain(dbm)
     print 'Gain of dirty beam:', bm_gain
@@ -117,12 +110,10 @@ for cnt, k in enumerate(keys):
         if not opts.pos_def is True:
             cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
                 maxiter=opts.maxiter, stop_if_div=not opts.div, 
-                #verbose=True, tol=opts.tol,pos_def=not opts.pos_def)
                 verbose=True, tol=opts.tol,pos_def=False)
         else:
             cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
                 maxiter=opts.maxiter, stop_if_div=not opts.div, 
-                #verbose=True, tol=opts.tol,pos_def=not opts.pos_def)
                 verbose=True, tol=opts.tol,pos_def=True) 
     elif opts.deconv == 'ann':
         cim,info = a.deconv.anneal(dim, dbm, maxiter=opts.maxiter, 
@@ -131,7 +122,6 @@ for cnt, k in enumerate(keys):
         cim,info = n.zeros_like(dim), {'res':dim}
     
     #Fit a 2d Gaussian to the dirty beam and convolve that with the clean components.
-    #dbm_fit = n.fft.fftshift(dbm)
     dbm_fit = n.fft.fftshift(dbm)
     DIM = dbm.shape[0]
     lo,hi = (DIM-10)/2,(DIM+10)/2
@@ -143,7 +133,8 @@ for cnt, k in enumerate(keys):
 
     rim = info['res']/bm_gain
 
-    bim = rim + cimc
+    #bim = rim + cimc
+    bim = rim + cim
 
     for ftag in ['cim','rim','bim','cimc']:
         if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)

@@ -6,6 +6,8 @@ corresponding PSF to produce a clean image.
 
 import aipy as a, numpy as n, sys, optparse, ephem, os
 
+from pylab import *
+
 o = optparse.OptionParser()
 o.set_usage('cl_img.py [options] *.dim.fits *.dbm.fits')
 o.set_description(__doc__)
@@ -101,7 +103,8 @@ for cnt, k in enumerate(keys):
     dim = n.fft.ifft2(uvs * mask).real
     dbm = n.fft.ifft2(bms * mask).real
     
-    dbm = a.img.recenter(dbm, (DIM/2,DIM/2))
+    #dbm = a.img.recenter(dbm, (DIM/2,DIM/2))
+    dbm = np.fft.fftshift(dbm)
     bm_gain = a.img.beam_gain(dbm)
     print 'Gain of dirty beam:', bm_gain
     if opts.deconv == 'mem':

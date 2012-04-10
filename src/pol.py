@@ -132,11 +132,8 @@ class AntennaArray(fit.AntennaArray):
         if len(args)>0:
             pol = args[0]
             ants = self.get_ant_list()
-            if pol in ('xx','xy','yx','yy'):
-                return self[ants[str(i)+pol[0]]].passband() * self[ants[str(j)+pol[1]]].passband(conj=True)
-            #This assumes you've run apply_cal.py before calling this function for IQUV.
-            elif pol in ('I','Q','U','V'): return n.ones_like(self.get_afreqs())
-        else: return fit.AntennaArray.passband(self, i, j)
+            return self[ants[str(i)+pol[0]]].passband() * self[ants[str(j)+pol[1]]].passband(conj=True)
+        else: return fit.AntennaArray.passband(self,i,j)
     def bm_response(self,i,j,pol='xx'):
         """Introduce Stokes' parameters into the definition of the beam."""
         try: return fit.AntennaArray.bm_response(self,i,j,pol=pol)
@@ -171,7 +168,7 @@ class AntennaArray(fit.AntennaArray):
             GBIE_sf = Gij_sf * Bij_sf * I_sf * E_sf
             Vij_f = GBIE_sf.sum(axis=0)
             return Vij_f
-        else: return np.zeros_like(self.passband(i,j,pol))
+        else: return n.zeros_like(self.passband(i,j,pol))
     def get_params(self, ant_prms={'*':'*'}):
         """Return all fitable parameters in a dictionary."""
         prms = {}

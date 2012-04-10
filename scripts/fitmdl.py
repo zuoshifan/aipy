@@ -34,7 +34,7 @@ o.add_option('--master', dest='master',
     help='Operate in master mode, employing daemon-mode servers to do the work and collecting the results.  Should be a comma delimited list of host:daemonid pairs to contact.  Daemon ID will be added to baseport to determine actual port used for TCP transactions.')
 o.add_option('--sim_autos', dest='sim_autos', action='store_true',
     help='Use auto-correlations in fitting.  Default is to use only cross-correlations.')
-o.add_option('--minuv',dest='minuv',default=20.,type='float',help='Minimum baseline lenght to consider')
+o.add_option('--minuv',dest='minuv',default=0.,type='float',help='Minimum baseline lenght to consider')
 
 opts, args = o.parse_args(sys.argv[1:])
 

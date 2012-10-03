@@ -43,6 +43,7 @@ def mfunc(uv, p, d, f):
     global curtime, src_spec
     uvw,t,(i,j) = p
     pol = a.miriad.pol2str[uv['pol']]
+    aa.set_active_pol(pol)
     if t != curtime:
         curtime = t
         aa.set_jultime(t)
@@ -55,7 +56,7 @@ def mfunc(uv, p, d, f):
         if hasattr(aa[0],'pol'): passband = aa.passband(i,j,pol)
         else: passband = aa.passband(i,j)
     else: passband = 1
-    if opts.beam: bm_resp = aa.bm_response(i,j,pol=pol).squeeze()
+    if opts.beam: bm_resp = aa.bm_response(i,j).squeeze()
     else: bm_resp = 1
     gain = passband * bm_resp * src_spec
     d /= n.where(gain == 0, 1, gain)

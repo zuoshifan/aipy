@@ -354,7 +354,8 @@ def to_fits(filename, data, clobber=False,
         phdu.header.update('CTYPE%d' % (i+1), ax.upper())
         if ax.lower().startswith('ra') or ax.lower().startswith('dec')\
         or ax.lower().startswith('glon') or ax.lower().startswith('glat'):
-            phdu.header.update('CRPIX%d' % (i+1), n.ceil(phdu.data.shape[-(i+1)]/2.))
+            phdu.header.update('CRPIX%d' % (i+1), n.ceil(phdu.data.shape[-(i+1)]/2.)+1) 
+                #+1 to deal with c/fortran numbering conventions.
         else:
             phdu.header.update('CRPIX%d' % (i+1), n.ceil(phdu.data.shape[-(i+1)]/2.))
         phdu.header.update('CRVAL%d' % (i+1), val)

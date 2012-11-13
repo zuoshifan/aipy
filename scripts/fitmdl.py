@@ -43,6 +43,8 @@ uv = a.miriad.UV(args[0])
 opts.ant += ',cross'
 a.scripting.uv_selector(uv, opts.ant, opts.pol)
 aa = a.cal.get_aa(opts.cal, uv['sdf'], uv['sfreq'], uv['nchan'])
+aa.set_active_pol(opts.pol)
+print aa.get_active_pol()
 chans = a.scripting.parse_chans(opts.chan, uv['nchan'])
 aa.select_chans(chans)
 srclist,cutoff,catalogs = a.scripting.parse_srcs(opts.src, opts.cat)
@@ -114,9 +116,11 @@ def fit_func(prms, filelist, decimate, decphs):
         for uvfile in filelist:
             sys.stdout.write('.') ; sys.stdout.flush()
             uv = a.miriad.UV(uvfile)
+            print opts.ant
             a.scripting.uv_selector(uv, opts.ant, opts.pol)
             uv.select('decimate', decimate, decphs)
             for (uvw,t,(i,j)),d,f in uv.all(raw=True):
+                print i,j
                 if not dbuf.has_key(t): dbuf[t] = {}
                 if not opts.sim_autos and i == j: continue
                 if uvlen(aa.get_baseline(i,j))*0.15 < opts.minuv: continue
@@ -150,7 +154,6 @@ def fit_func(prms, filelist, decimate, decphs):
         for bl in dbuf[t]:
             i,j = a.miriad.bl2ij(bl)
             d,f,nsamp,pol = dbuf[t][bl]
-            aa.set_active_pol(pol)
             sim_d = aa.sim(i, j)
             difsq = n.abs(d - sim_d)**2
             difsq = n.where(f, 0, difsq)

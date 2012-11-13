@@ -183,7 +183,7 @@ for uvfile in args:
                 d, info = a.deconv.clean(d, ker, tol=opts.clean)
                 d += info['res'] / gain
             d = n.ma.array(d)
-            d = n.fft.fftshift(d, axes=0)
+            d = n.fft.fftshift(d, axes=[0])
         elif opts.unmask: d = d.data
         d.shape = (1,) + d.shape
         if not plot_x.has_key(bl): plot_x[bl] = []
@@ -223,7 +223,7 @@ for cnt, bl in enumerate(bls):
                 if gain[chan] == 0: continue
                 d[:,chan],info = a.deconv.clean(d[:,chan],ker[:,chan],tol=opts.clean)
                 d[:,chan] += info['res'] / gain[chan]
-        d = n.fft.fftshift(d, axes=0)
+        d = n.fft.fftshift(d, axes=[0])
         d = n.ma.array(d)
     plt_data[cnt+1] = d
     d = data_mode(d, opts.mode)

@@ -6,6 +6,8 @@ corresponding PSF to produce a clean image.
 
 import aipy as a, numpy as n, sys, optparse, ephem, os
 
+from pylab import *
+
 o = optparse.OptionParser()
 o.set_usage('cl_img.py [options] *.dim.fits *.dbm.fits')
 o.set_description(__doc__)
@@ -13,6 +15,7 @@ o.add_option('-d', '--deconv', dest='deconv', default='cln',
     help='Attempt to deconvolve the dirty image by the dirty beam using the specified deconvolver (none,mem,lsq,cln,ann).')
 o.add_option('-o', '--output', dest='output', default='bim',
     help='Comma delimited list of data to generate FITS files for.  Can be: cim (clean image), cimc (clean image, convolved with central lobe of dirty beam) rim (residual image), or bim (best image = clean + residuals). Default is bim.')
+o.add_option('--cbm',dest='cbm',action='store_true',help='Convolve by the clean-beam')
 o.add_option('--var', dest='var', type='float', default=.6,
     help='Starting guess for variance in maximum entropy fit (defaults to variance of dirty image.')
 o.add_option('--tol', dest='tol', type='float', default=1e-6,
@@ -78,10 +81,6 @@ for cnt, k in enumerate(keys):
             divisor = abms.clip(thresh, n.Inf)
             uvs /= divisor; bms /= divisor
         elif opts.rewgt.startswith('radial'):
-            #x,y = n.indices(dim.shape)
-            #x = a.img.recenter(x - DIM/2, (DIM/2,DIM/2))
-            #y = a.img.recenter(y - DIM/2, (DIM/2,DIM/2))
-            #r = n.sqrt(x**2 + y**2)
             uvs *= r; bms *= r
         elif opts.rewgt.startswith('midrange'):
             x,y = n.indices(dim.shape)
@@ -93,15 +92,13 @@ for cnt, k in enumerate(keys):
             wgt = n.where(wgt < 0, 0, wgt)
             uvs *= wgt; bms *= wgt
         else: raise ValueError('Unrecognized rewgt: %s' % opts.rewgt)
-    #mask = n.where(r < opts.minuv, 0, 1)
-    #mask = n.where(r > opts.maxuv, 0, mask)
     mask = 1
     if opts.minuv > 0: mask *= 1 - n.exp(-r**2/opts.minuv**2)
     if opts.maxuv > 0: mask *= n.exp(-r**2/opts.maxuv**2)
     dim = n.fft.ifft2(uvs * mask).real
     dbm = n.fft.ifft2(bms * mask).real
     
-    dbm = a.img.recenter(dbm, (DIM/2,DIM/2))
+    dbm = np.fft.fftshift(dbm)
     bm_gain = a.img.beam_gain(dbm)
     print 'Gain of dirty beam:', bm_gain
     if opts.deconv == 'mem':
@@ -111,9 +108,14 @@ for cnt, k in enumerate(keys):
         cim,info = a.deconv.lsq(dim, dbm, 
             maxiter=opts.maxiter, verbose=True, tol=opts.tol)
     elif opts.deconv == 'cln':
-        cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
-            maxiter=opts.maxiter, stop_if_div=not opts.div, 
-            verbose=True, tol=opts.tol,pos_def=not opts.pos_def)
+        if not opts.pos_def is True:
+            cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
+                maxiter=opts.maxiter, stop_if_div=not opts.div, 
+                verbose=True, tol=opts.tol,pos_def=False)
+        else:
+            cim,info = a.deconv.clean(dim, dbm, gain=opts.gain, 
+                maxiter=opts.maxiter, stop_if_div=not opts.div, 
+                verbose=True, tol=opts.tol,pos_def=True) 
     elif opts.deconv == 'ann':
         cim,info = a.deconv.anneal(dim, dbm, maxiter=opts.maxiter, 
             cooling=lambda i,x: opts.tol*(1-n.cos(i/50.))*(x**2), verbose=True)
@@ -128,20 +130,28 @@ for cnt, k in enumerate(keys):
     if opts.deconv == 'none': # XXX this is a hack
         rim = info['res']
         bim = rim / bm_gain + cim
-    else:
-        # This doesn't work for deconv=none
-        cbm = a.twodgauss.twodgaussian(a.twodgauss.moments(dbm_fit),shape=dbm.shape)
-        cbm = a.img.recenter(cbm,(n.ceil((DIM+dbm_fit.shape[0])/2),n.ceil((DIM+dbm_fit.shape[0])/2)))
-        cbm /= n.sum(cbm)
+    else: # This doesn't work for deconv=none
+        rim = info['res']/bm_gain
 
-        cimc = n.fft.fftshift(n.fft.ifft2(n.fft.fft2(cim)*n.fft.fft2(cbm))).real
+        if not opts.cbm is True:
+            bim = rim+cim
+        else:
+            dbm_fit = n.fft.fftshift(dbm)
+            DIM = dbm.shape[0]
+            lo,hi = (DIM-10)/2,(DIM+10)/2
+            dbm_fit = dbm_fit[lo:hi,lo:hi]
+            cbm = a.twodgauss.twodgaussian(a.twodgauss.moments(dbm_fit),shape=dbm.shape)
+            cbm = a.img.recenter(cbm,(n.ceil((DIM+dbm_fit.shape[0])/2),n.ceil((DIM+dbm_fit.shape[0])/2)))
+            cbm /= cbm.max()
 
-        rim = info['res']
+            cimc = n.fft.fftshift(n.fft.ifft2(n.fft.fft2(cim)*n.fft.fft2(cbm))).real
+            bim = rim + cimc
 
-        bim = rim / bm_gain + cimc 
-    
-    for ftag in ['cim','rim','bim','cimc']:
-        print ftag
-        if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
-    
+    if not opts.cbm is True:
+        for ftag in ['cim','rim','bim']:
+            if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
+    else: 
+        for ftag in ['cim','rim','bim','cimc']:
+            if ftag in outputs: to_fits(k, ftag, eval(ftag), kwds)
+
 

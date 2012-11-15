@@ -189,7 +189,7 @@ class TestAntenna(unittest.TestCase):
         chans = n.array([1,2,3])
         self.ant.select_chans(chans)
         self.assertTrue(n.all(self.bm.chans == chans))
-        self.assertTrue(n.all(self.ant.phsoff == 1))
+        self.assertTrue(n.all(self.ant._phsoff == 1))
         
 class TestArrayLocation(unittest.TestCase):
     def setUp(self):

@@ -288,17 +288,17 @@ class AntennaArray(phs.AntennaArray):
     def bm_response(self, i, j):
         """Return the beam response towards the cached source positions
         for baseline i,j with the specified polarization."""
-        pol = self.get_active_pol(split=True)
+        pi,pj = self.get_active_pol(split=True)
         self[i].set_active_pol(pi)
         self[j].set_active_pol(pj)
         # Check that we have cached results needed.  If not, cache them.
-        for c,p in zip([i,j], [p1,p2]):
+        for c,p in zip([i,j], [pi,pj]):
             if not self._cache.has_key(c): self._cache[c] = {}
             if not self._cache[c].has_key(p):
                 x,y,z = self._cache['s_top']
                 resp = self[c].bm_response((x,y,z)).transpose()
                 self._cache[c][p] = resp
-        return self._cache[j][p1] * n.conjugate(self._cache[i][p2])
+        return self._cache[j][pi] * n.conjugate(self._cache[i][pj])
     
     def sim_cache(self, s_eqs, jys=n.array([1.]), mfreqs=0.150,
             ionrefs=(0.,0.), srcshapes=(0,0,0)):

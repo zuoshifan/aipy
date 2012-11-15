@@ -216,7 +216,7 @@ class BeamAlm(phs.Beam):
 class Antenna(phs.Antenna):
     """Representation of physical location and beam pattern of individual 
     antenna in array."""
-    def __init__(self, x, y, z, beam, phsoff=[0.,0.], dp=False, bp_r=n.array([1]),
+    def __init__(self, x, y, z, beam, phsoff=[0.,0.], bp_r=n.array([1]),
             bp_i=n.array([0]), amp=1, pointing=(0.,n.pi/2,0), **kwargs):
         """x,y z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object (implements response() function)
@@ -226,29 +226,16 @@ class Antenna(phs.Antenna):
         bp_i = polynomial (in freq) modeling imaginary component of passband
         amp = overall multiplicative scaling of gain
         pointing = antenna pointing (az,alt).  Default is zenith."""
-        phs.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff,dp=dp)
+        phs.Antenna.__init__(self, x,y,z, beam=beam, phsoff=phsoff)
         self.set_pointing(*pointing)
-        if self.dp:
-            if len(n.array(bp_r).shape) != 2: self.bp_r = [bp_r,bp_r]
-            else: self.bp_r = bp_r
-            if len(n.array(bp_i).shape) != 2: self.bp_i = [bp_i,bp_i]
-            else: self.bp_i = bp_i
-            if n.array(amp).shape != (2,): self.amp = [amp,amp]
-            else: self.amp = amp
-        else:
-            self.bp_r = bp_r
-            self.bp_i = bp_i
-            self.amp = amp
+        self.bp_r = bp_r
+        self.bp_i = bp_i
+        self.amp = amp
         self._update_gain()
     def _update_gain(self):
-        if self.dp: 
-            bpx = n.polyval(self.bp_r[0],self.beam.afreqs)+1.j*n.polyval(self.bp_i[0],self.beam.afreqs)
-            bpy = n.polyval(self.bp_r[1],self.beam.afreqs)+1.j*n.polyval(self.bp_i[1],self.beam.afreqs)
-            self._gain = [bpx,bpy] 
-        else:
-            bp = n.polyval(self.bp_r, self.beam.afreqs) + \
-                 1j*n.polyval(self.bp_i, self.beam.afreqs)
-            self._gain = self.amp * bp
+        bp = n.polyval(self.bp_r, self.beam.afreqs) + \
+            1j*n.polyval(self.bp_i, self.beam.afreqs)
+        self._gain = self.amp * bp
     def update(self):
         phs.Antenna.update(self)
         self._update_gain()
@@ -263,8 +250,9 @@ class Antenna(phs.Antenna):
         rot = n.dot(rot, coord.rot_m(-az, z))
         self.rot_pol_x = rot
         self.rot_pol_y = n.dot(coord.rot_m(-n.pi/2, z), rot)
-    def bm_response(self, top, pol='x'):
+    def bm_response(self, top):
         """Return response of beam for specified polarization."""
+        pol = self.get_active_pol()
         top = n.array(top)
         top = {'x':n.dot(self.rot_pol_x, top), 
                'y':n.dot(self.rot_pol_y, top)}[pol]
@@ -274,6 +262,20 @@ class Antenna(phs.Antenna):
         if conj: return n.conjugate(self._gain)
         else: return self._gain
 
+class AntennaDualPol(phs.AntennaDualPol,Antenna):
+    '''XXX tell user that amp, bp_r, bp_i are dicts with matching keys'''
+    def _update_gain(self):
+        self._gain = {}
+        for k in self.bp_r:
+            bp = n.polyval(self.bp_r[k], self.beam.afreqs) + \
+                1j*n.polyval(self.bp_i[k], self.beam.afreqs)
+            self._gain[k] = self.amp[k] * bp
+    def passband(self, conj=False):
+        pol = self.get_active_pol()
+        if conj: return n.conjugate(self._gain[pol])
+        else: return self._gain[pol]
+
+    
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
 #   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` | / _ \ | '__| '__/ _` | | | |
@@ -293,23 +295,22 @@ class AntennaArray(phs.AntennaArray):
         self._cache = None
     def passband(self, i, j):
         """Return the passband response of baseline i,j."""
-        if self[i].dp:
-            pi,pj = self.pindices(self.get_active_pol())
-            pbi = self[i].passband(conj=True)
-            pbj = self[j].passband()
-            return pbi[pi]*pbj[pj]
-        else: return self[j].passband() * self[i].passband(conj=True)
+        pi,pj = self.get_active_pol(split=True)
+        self[i].set_active_pol(pi)
+        self[j].set_active_pol(pj)
+        return self[j].passband() * self[i].passband(conj=True)
     def bm_response(self, i, j):
         """Return the beam response towards the cached source positions
         for baseline i,j with the specified polarization."""
-        pol = self.get_active_pol()
-        p1, p2 = pol[0], pol[-1]
+        pol = self.get_active_pol(split=True)
+        self[i].set_active_pol(pi)
+        self[j].set_active_pol(pj)
         # Check that we have cached results needed.  If not, cache them.
         for c,p in zip([i,j], [p1,p2]):
             if not self._cache.has_key(c): self._cache[c] = {}
             if not self._cache[c].has_key(p):
                 x,y,z = self._cache['s_top']
-                resp = self[c].bm_response((x,y,z), pol=p).transpose()
+                resp = self[c].bm_response((x,y,z)).transpose()
                 self._cache[c][p] = resp
         return self._cache[j][p1] * n.conjugate(self._cache[i][p2])
     
@@ -367,22 +368,21 @@ class AntennaArray(phs.AntennaArray):
             raise RuntimeError('sim_cache() must be called before the first sim() call at each time step.')
         elif self._cache == {}:
             return n.zeros_like(self.passband(i,j))
-        pol = self.get_active_pol()
-        if pol[0] != pol[-1]: return n.zeros_like(self.passband(i,j))
-        else:
-            s_eqs = self._cache['s_eqs']
-            u,v,w = self.gen_uvw(i, j, src=s_eqs)
-            I_sf = self._cache['jys']
-            Gij_sf = self.passband(i,j)
-            Bij_sf = self.bm_response(i,j)
-            if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
-            # Get the phase of each src vs. freq, also does resolution effects
-            E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, mfreq=self._cache['mfreq'],
-                srcshape=self._cache['s_shp'], ionref=self._cache['i_ref'],
-                resolve_src=True))
-            try: E_sf.shape = I_sf.shape
-            except(AttributeError): pass
-            # Combine and sum over sources
-            GBIE_sf = Gij_sf * Bij_sf * I_sf * E_sf
-            Vij_f = GBIE_sf.sum(axis=0)
-            return Vij_f
+        pi,pj = self.get_active_pol(split=True)
+        if pi != pj: return n.zeros_like(self.passband(i,j)) # cross-pols shouldn't have unpolarized flux.  This is here until we simulate polarized flux.
+        s_eqs = self._cache['s_eqs']
+        u,v,w = self.gen_uvw(i, j, src=s_eqs)
+        I_sf = self._cache['jys']
+        Gij_sf = self.passband(i,j)
+        Bij_sf = self.bm_response(i,j)
+        if len(Bij_sf.shape) == 2: Gij_sf = n.reshape(Gij_sf, (1, Gij_sf.size))
+        # Get the phase of each src vs. freq, also does resolution effects
+        E_sf = n.conjugate(self.gen_phs(s_eqs, i, j, mfreq=self._cache['mfreq'],
+            srcshape=self._cache['s_shp'], ionref=self._cache['i_ref'],
+            resolve_src=True))
+        try: E_sf.shape = I_sf.shape
+        except(AttributeError): pass
+        # Combine and sum over sources
+        GBIE_sf = Gij_sf * Bij_sf * I_sf * E_sf
+        Vij_f = GBIE_sf.sum(axis=0)
+        return Vij_f

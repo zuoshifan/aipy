@@ -183,36 +183,48 @@ class Beam:
 
 class Antenna:
     """Representation of physical attributes of individual antenna."""
-    def __init__(self, x, y, z, beam, phsoff=[0.,0.], dp = False, **kwargs):
+    def __init__(self, x, y, z, beam, phsoff=[0.,0.], **kwargs):
         """x,y,z = antenna coordinates in equatorial (ns) coordinates
         beam = Beam object
         phsoff = polynomial phase vs. frequency.  Phs term that is linear
                  with freq is often called 'delay'."""
         self.pos = n.array((x,y,z), n.float64) # must be float64 for mir
-        self.dp = dp
         self.beam = beam
-        if self.dp and len(n.array(phsoff).shape) != 2:
-            self._phsoff = [phsoff,phsoff]
-        else: self._phsoff = phsoff
+        self.__phsoff = phsoff
         self._update_phsoff()
+        self.active_pol = None
     def select_chans(self, active_chans=None):
         """Select only the specified channels for use in future calculations."""
         self.beam.select_chans(active_chans)
         self.update()
+    def set_active_pol(self, pol):
+        assert(pol in 'xy') # We only do linear polarizations for now
+        self.active_pol = pol
+    def get_active_pol(self):
+        if self.active_pol is None: raise RuntimeError('No active polarization wet (use Antenna.set_active_pol)')
+        return self.active_pol
     def _update_phsoff(self):
-        if self.dp:
-            px = n.polyval(self._phsoff[0], self.beam.afreqs)
-            py = n.polyval(self._phsoff[1], self.beam.afreqs)
-            self.phsoff = [px,py]
-        else: self.phsoff = n.polyval(self._phsoff, self.beam.afreqs)
+        self._phsoff = n.polyval(self.__phsoff, self.beam.afreqs)
     def update(self):
         self._update_phsoff()
+    def phsoff(self):
+        return self._phsoff
     def __iter__(self): return self.pos.__iter__()
     def __add__(self, a): return self.pos + a.pos
     __radd__ = __add__
     def __neg__(self): return -self.pos
     def __sub__(self, a): return self.pos - a.pos
     def __rsub__(self, a): return a.pos - self.pos
+
+class AntennaDualPol(Antenna):
+    '''XXX tell user that phsoff must be a dict'''
+    def _update_phsoff(self):
+        self._phsoff = {}
+        for k in self._phsoff:
+            self._phsoff[k] = n.polyval(self.__phsoff[k], self.beam.afreqs)
+    def phsoff(self):
+        pol = self.get_active_pol()
+        return self._phsoff[pol]
 
 #     _                         _                    _   _             
 #    / \   _ __ _ __ __ _ _   _| |    ___   ___ __ _| |_(_) ___  _ __  
@@ -263,22 +275,18 @@ class AntennaArray(ArrayLocation):
         ants = list of Antenna objects."""
         ArrayLocation.__init__(self, location=location)
         self.ants = ants
-        assert(ant.dp==self.ants[0].dp for ant in ants)
         self.active_pol = None
     def __iter__(self): return self.ants.__iter__()
     def __getitem__(self, *args): return self.ants.__getitem__(*args)
     def __setitem__(self, *args): return self.ants.__setitem__(*args)
     def __len__(self): return self.ants.__len__()
     def set_active_pol(self,pol):
-        assert(pol in ('xx','xy','yx','yy'))
+        assert(pol in ('xx','xy','yx','yy')) # We only do linear pol for now
         self.active_pol = pol
-    def get_active_pol(self):
+    def get_active_pol(self, split=False):
         if self.active_pol is None: raise RuntimeError('No active polarization set (use AntennaArray.set_active_pol)')
-        return self.active_pol
-    def pindices(self,pol):
-        assert(pol in ('xx','xy','yx','yy'))
-        d = {'x':0,'y':1}
-        return d[pol[0]],d[pol[-1]]
+        if split: return self.active_pol[0], self.active_pol[-1]
+        else: return self.active_pol
     def update(self):
         ArrayLocation.update(self)
         for a in self: a.update()
@@ -330,10 +338,10 @@ class AntennaArray(ArrayLocation):
         return n.dot(m, bl).transpose()
     def get_phs_offset(self, i, j):
         """Return the frequency-dependent phase offset of baseline i,j."""
-        if self[i].dp:
-            pi,pj = self.pindices(self.get_active_pol())
-            return self[j].phsoff[pj] - self[i].phsoff[pi]
-        else: return self[j].phsoff - self[i].phsoff
+        pi,pj = self.get_active_pol(split=True)
+        self[i].set_active_pol(pi)
+        self[j].set_active_pol(pj)
+        return self[j].phsoff() - self[i].phsoff()
     def gen_uvw(self, i, j, src='z', w_only=False):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 
         or 'z' for zenith uvw coordinates.  If w_only is True, only w (instead

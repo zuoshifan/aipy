@@ -222,6 +222,8 @@ class TestAntennaArray(unittest.TestCase):
         a4 = a.phs.Antenna(0,0,1,bm, [0,3])
         self.ants = [a1,a2,a3,a4]
         self.aa = a.phs.AntennaArray(('0','0'), self.ants)
+        #ARGH! SHOULD THIS BE HERE?
+        self.aa.set_active_pol('xx')
     def test_attributes(self):
         self.assertEqual(len(self.aa), 4)
         for ai, aj in zip(self.aa, self.ants): self.assertEqual(ai, aj)
@@ -288,6 +290,7 @@ class TestAntennaArray(unittest.TestCase):
         self.assertTrue(n.all(w == 0*afreqs))
     def test_gen_phs(self):
         self.aa.select_chans([1,2,3])
+        self.aa.set_active_pol('xx')
         afreqs = self.aa[0].beam.afreqs
         for t in n.random.random((40,)):
             self.aa.set_jultime(2454555. + t)

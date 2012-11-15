@@ -216,16 +216,6 @@ class Antenna:
     def __sub__(self, a): return self.pos - a.pos
     def __rsub__(self, a): return a.pos - self.pos
 
-class AntennaDualPol(Antenna):
-    '''XXX tell user that phsoff must be a dict'''
-    def _update_phsoff(self):
-        self._phsoff = {}
-        for k in self._phsoff:
-            self._phsoff[k] = n.polyval(self.__phsoff[k], self.beam.afreqs)
-    def phsoff(self):
-        pol = self.get_active_pol()
-        return self._phsoff[pol]
-
 #     _                         _                    _   _             
 #    / \   _ __ _ __ __ _ _   _| |    ___   ___ __ _| |_(_) ___  _ __  
 #   / _ \ | '__| '__/ _` | | | | |   / _ \ / __/ _` | __| |/ _ \| '_ \ 
@@ -341,6 +331,7 @@ class AntennaArray(ArrayLocation):
         pi,pj = self.get_active_pol(split=True)
         self[i].set_active_pol(pi)
         self[j].set_active_pol(pj)
+        self.set_active_pol(pi+pj)
         return self[j].phsoff() - self[i].phsoff()
     def gen_uvw(self, i, j, src='z', w_only=False):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 

@@ -262,20 +262,6 @@ class Antenna(phs.Antenna):
         if conj: return n.conjugate(self._gain)
         else: return self._gain
 
-class AntennaDualPol(phs.AntennaDualPol,Antenna):
-    '''XXX tell user that amp, bp_r, bp_i are dicts with matching keys'''
-    def _update_gain(self):
-        self._gain = {}
-        for k in self.bp_r:
-            bp = n.polyval(self.bp_r[k], self.beam.afreqs) + \
-                1j*n.polyval(self.bp_i[k], self.beam.afreqs)
-            self._gain[k] = self.amp[k] * bp
-    def passband(self, conj=False):
-        pol = self.get_active_pol()
-        if conj: return n.conjugate(self._gain[pol])
-        else: return self._gain[pol]
-
-    
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
 #   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` | / _ \ | '__| '__/ _` | | | |

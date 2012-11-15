@@ -342,56 +342,6 @@ class Antenna(amp.Antenna):
         if changed: self.update()
         return changed
 
-class AntennaDualPol(amp.AntennaDualPol):
-    """Representation of physical location and beam pattern of individual 
-    antenna in array.  Adds get_params() and set_params() to amp.Antenna."""
-    def get_params(self, prm_list=['*']):
-        """Return all fitable parameters in a dictionary."""
-        x,y,z = self.pos
-        aprms = {'x':x, 'y':y, 'z':z}
-        for k in self.__phsoff:
-            aprms['dly_'+k] = self.__phsoff[k][-2]
-            aprms['off_'+k] = self.__phsoff[k][-1]
-            aprms['phsoff_'+k] = self.__phsoff[k]
-        for k in self.bp_r:
-            aprms['bp_r_'+k] = list(self.bp_r[k])
-            aprms['bp_i_'+k] = list(self.bp_i[k])
-            aprms['amp_'+k] = self.amp[k]
-        aprms.update(self.beam.get_params(prm_list)) 
-        prms = {}
-        for p in prm_list:
-            if p.startswith('*'): return aprms
-            try: prms[p] = aprms[p]
-            except(KeyError): pass
-        return prms
-    def set_params(self, prms):
-        """Set all parameters from a dictionary."""
-        changed = False
-        self.beam.set_params(prms)
-        try: self.pos[0], changed = prms['x'], True
-        except(KeyError): pass
-        try: self.pos[1], changed = prms['y'], True
-        except(KeyError): pass
-        try: self.pos[2], changed = prms['z'], True
-        except(KeyError): pass
-        for k in self.__phsoff:
-            try: self.__phsoff[k][-2], changed = prms['dly_'+k], True
-            except(KeyError): pass
-            try: self.__phsoff[k][-1], changed = prms['off_'+k], True
-            except(KeyError): pass
-            try: self.__phsoff[k], changed = prms['phsoff_'+k], True
-            except(KeyError): pass
-        for k in self.bp_r:
-            try: self.bp_r[k], changed = prms['bp_r_'+k], True
-            except(KeyError): pass
-            try: self.bp_i[k], changed = prms['bp_i_'+k], True
-            except(KeyError): pass
-            try: self.amp[k], changed = prms['amp_'+k], True
-            except(KeyError): pass
-        
-        if changed: self.update()
-        return changed
-
 #     _          _                            _                         
 #    / \   _ __ | |_ ___ _ __  _ __   __ _   / \   _ __ _ __ __ _ _   _ 
 #   / _ \ | '_ \| __/ _ \ '_ \| '_ \ / _` | / _ \ | '__| '__/ _` | | | |

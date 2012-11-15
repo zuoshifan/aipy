@@ -201,7 +201,7 @@ class Antenna:
         assert(pol in 'xy') # We only do linear polarizations for now
         self.active_pol = pol
     def get_active_pol(self):
-        if self.active_pol is None: raise RuntimeError('No active polarization wet (use Antenna.set_active_pol)')
+        if self.active_pol is None: raise RuntimeError('No active polarization set (use Antenna.set_active_pol)')
         return self.active_pol
     def _update_phsoff(self):
         self._phsoff = n.polyval(self.__phsoff, self.beam.afreqs)

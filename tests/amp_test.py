@@ -72,9 +72,11 @@ class TestAntenna(unittest.TestCase):
         """Test the Antenna beam response"""
         xyz = (.05,0,1)
         self.ant.select_chans([0])
-        resp = self.ant.bm_response(xyz, pol='x')
+        self.ant.set_active_pol('x')
+        resp = self.ant.bm_response(xyz)
         self.assertAlmostEqual(resp, n.sqrt(n.exp(-1)), 3)
-        resp = self.ant.bm_response(xyz, pol='y')
+        self.ant.set_active_pol('y')
+        resp = self.ant.bm_response(xyz)
         self.assertAlmostEqual(resp, n.sqrt(n.exp(-4)), 3)
 
 #class TestMemLeaks(unittest.TestCase):

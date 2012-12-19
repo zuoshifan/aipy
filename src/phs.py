@@ -331,7 +331,6 @@ class AntennaArray(ArrayLocation):
         pi,pj = self.get_active_pol(split=True)
         self[i].set_active_pol(pi)
         self[j].set_active_pol(pj)
-        self.set_active_pol(pi+pj)
         return self[j].phsoff() - self[i].phsoff()
     def gen_uvw(self, i, j, src='z', w_only=False):
         """Compute uvw coordinates of baseline relative to provided RadioBody, 

@@ -81,10 +81,10 @@ class Img:
         self.size = float(size)
         dim = n.round(self.size / self.res)
         self.shape = (dim,dim)
-        self.uv = n.zeros(shape=self.shape, dtype=n.complex64)
+        self.uv = n.zeros(shape=self.shape, dtype=n.complex128)
         self.bm = []
         for i in range(mf_order+1):
-            self.bm.append(n.zeros(shape=self.shape, dtype=n.complex64))
+            self.bm.append(n.zeros(shape=self.shape, dtype=n.complex128))
     def get_LM(self, center=(0,0)):
         """Get the (l,m) image coordinates for an inverted UV matrix."""
         dim = self.shape[0]
@@ -181,7 +181,7 @@ class Img:
     def _gen_img(self, data, center=(0,0)):
         """Return the inverse FFT of the provided data, with the 0,0 point 
         moved to 'center'.  Up=North, Right=East."""
-        return recenter(n.fft.ifft2(data).real.astype(n.float32), center)
+        return recenter(n.fft.ifft2(data).real.astype(n.float64), center)
     def image(self, center=(0,0)):
         """Return the inverse FFT of the UV matrix, with the 0,0 point moved
         to 'center'.  Tranposes to put up=North, right=East."""

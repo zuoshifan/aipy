@@ -38,6 +38,48 @@ PyObject *wrap_grid1D_c(PyObject *self, PyObject *args) {
     }
 }
 
+/* PyObject *wrap_grid2D_c(PyObject *self, PyObject *args) { */
+/*     PyArrayObject *buf, *ind1, *ind2, *dat; */
+/*     int rv; */
+/*     long footprint=6; */
+/*     // Parse arguments and perform sanity check */
+/*     if (!PyArg_ParseTuple(args, "O!O!O!O!|i", &PyArray_Type, &buf, */
+/*             &PyArray_Type, &ind1, &PyArray_Type, &ind2, &PyArray_Type, &dat, &footprint)) */
+/*         return NULL; */
+/*     CHK_ARRAY_RANK(buf, 2); */
+/*     CHK_ARRAY_RANK(ind1, 1); */
+/*     CHK_ARRAY_RANK(ind2, 1); */
+/*     CHK_ARRAY_RANK(dat, 1); */
+/*     CHK_ARRAY_TYPE(buf, NPY_CFLOAT); */
+/*     CHK_ARRAY_TYPE(ind1, NPY_FLOAT); */
+/*     CHK_ARRAY_TYPE(ind2, NPY_FLOAT); */
+/*     CHK_ARRAY_TYPE(dat, NPY_CFLOAT); */
+/*     if (PyArray_DIM(ind1,0) != PyArray_DIM(dat,0) || PyArray_DIM(ind2,0) != PyArray_DIM(dat,0)) { */
+/*         PyErr_Format(PyExc_ValueError, "Dimensions of ind and dat do not match"); */
+/*         return NULL; */
+/*     } */
+        
+/*     Py_INCREF(buf); */
+/*     Py_INCREF(ind1); */
+/*     Py_INCREF(ind2); */
+/*     Py_INCREF(dat); */
+/*     rv = grid2D_c((float *) PyArray_DATA(buf), (long) PyArray_DIM(buf,0), (long) PyArray_DIM(buf,1), */
+/*                   (float *) PyArray_DATA(ind1), (float *) PyArray_DATA(ind2), */
+/*                   (float *) PyArray_DATA(dat), (long) PyArray_DIM(dat,0), footprint); */
+/*     Py_DECREF(buf); */
+/*     Py_DECREF(ind1); */
+/*     Py_DECREF(ind2); */
+/*     Py_DECREF(dat); */
+/*     if (rv == 0) { */
+/*         Py_INCREF(Py_None); */
+/*         return Py_None; */
+/*     } else { */
+/*         PyErr_Format(PyExc_ValueError, "Invalid indices found."); */
+/*         return NULL; */
+/*     } */
+/* } */
+
+// change complex float of buf and data to complex double for greater numerical precision
 PyObject *wrap_grid2D_c(PyObject *self, PyObject *args) {
     PyArrayObject *buf, *ind1, *ind2, *dat;
     int rv;
@@ -50,10 +92,10 @@ PyObject *wrap_grid2D_c(PyObject *self, PyObject *args) {
     CHK_ARRAY_RANK(ind1, 1);
     CHK_ARRAY_RANK(ind2, 1);
     CHK_ARRAY_RANK(dat, 1);
-    CHK_ARRAY_TYPE(buf, NPY_CFLOAT);
+    CHK_ARRAY_TYPE(buf, NPY_CDOUBLE);
     CHK_ARRAY_TYPE(ind1, NPY_FLOAT);
     CHK_ARRAY_TYPE(ind2, NPY_FLOAT);
-    CHK_ARRAY_TYPE(dat, NPY_CFLOAT);
+    CHK_ARRAY_TYPE(dat, NPY_CDOUBLE);
     if (PyArray_DIM(ind1,0) != PyArray_DIM(dat,0) || PyArray_DIM(ind2,0) != PyArray_DIM(dat,0)) {
         PyErr_Format(PyExc_ValueError, "Dimensions of ind and dat do not match");
         return NULL;
@@ -63,9 +105,9 @@ PyObject *wrap_grid2D_c(PyObject *self, PyObject *args) {
     Py_INCREF(ind1);
     Py_INCREF(ind2);
     Py_INCREF(dat);
-    rv = grid2D_c((float *) PyArray_DATA(buf), (long) PyArray_DIM(buf,0), (long) PyArray_DIM(buf,1),
+    rv = grid2D_c((double *) PyArray_DATA(buf), (long) PyArray_DIM(buf,0), (long) PyArray_DIM(buf,1),
                   (float *) PyArray_DATA(ind1), (float *) PyArray_DATA(ind2), 
-                  (float *) PyArray_DATA(dat), (long) PyArray_DIM(dat,0), footprint);
+                  (double *) PyArray_DATA(dat), (long) PyArray_DIM(dat,0), footprint);
     Py_DECREF(buf);
     Py_DECREF(ind1);
     Py_DECREF(ind2);

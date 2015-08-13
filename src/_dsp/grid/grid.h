@@ -6,7 +6,8 @@
 
 int grid1D_r(float *, long, float *, float *, long, long);
 int grid1D_c(float *, long, float *, float *, long, long);
-int grid2D_c(float *, long, long, float *, float *, float *, long, long);
+/* int grid2D_c(float *, long, long, float *, float *, float *, long, long); */
+int grid2D_c(double *, long, long, float *, float *, double *, long, long);
 int degrid2D_c(float *, long, long, float *, float *, float *, long, long);
 
 #endif

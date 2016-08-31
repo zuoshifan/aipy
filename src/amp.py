@@ -256,8 +256,11 @@ class Antenna(phs.Antenna):
     def bm_response(self, top, pol='x'):
         """Return response of beam for specified polarization."""
         top = n.array(top)
+        # top = {'x':n.dot(self.rot_pol_x, top), 
+        #        'y':n.dot(self.rot_pol_y, top)}[pol]
+        ### make bm_response the same for x and y
         top = {'x':n.dot(self.rot_pol_x, top), 
-               'y':n.dot(self.rot_pol_y, top)}[pol]
+               'y':n.dot(self.rot_pol_x, top)}[pol]
         x,y,z = top
         return self.beam.response((x,y,z))
     def passband(self, conj=False):
